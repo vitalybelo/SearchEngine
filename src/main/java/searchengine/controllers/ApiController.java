@@ -1,5 +1,6 @@
 package searchengine.controllers;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -9,17 +10,20 @@ import searchengine.config.Site;
 import searchengine.dto.statistics.RequestResponse;
 import searchengine.dto.statistics.StatisticsData;
 import searchengine.dto.statistics.StatisticsResponse;
+import searchengine.model.SiteRepository;
 import searchengine.services.StatisticsService;
-
 
 @RestController
 @RequestMapping("/api")
 public class ApiController {
 
+    @Autowired
+    private SiteRepository siteRepository;
     private final StatisticsService statisticsService;
     private StatisticsData statisticData = new StatisticsData();
 
-    public ApiController(StatisticsService statisticsService) {
+    public ApiController(SiteRepository siteDBRepository, StatisticsService statisticsService) {
+        this.siteRepository = siteDBRepository;
         this.statisticsService = statisticsService;
     }
 

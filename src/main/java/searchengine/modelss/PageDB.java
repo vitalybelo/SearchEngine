@@ -7,11 +7,9 @@ import org.springframework.lang.NonNull;
 import javax.persistence.*;
 import java.util.Objects;
 
+@Entity
 @Getter
 @Setter
-@ToString
-@AllArgsConstructor
-@Entity
 public class PageDB {
 
     @Id
@@ -21,8 +19,7 @@ public class PageDB {
 
     @NonNull
     @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @ToString.Exclude
-    private SiteDB site_id;     // ID веб-сайта из таблицы site
+    private Site site_id;     // ID веб-сайта из таблицы site
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String path;        // адрес страницы от корня (должен начинаться слэшем, например: /news/372189/)
@@ -32,8 +29,6 @@ public class PageDB {
 
     @Column(columnDefinition = "MEDIUMTEXT", nullable = false)
     private String content;     // контент страницы (HTML-код)
-
-    public PageDB() {}
 
     @Override
     public boolean equals(Object o) {
