@@ -12,36 +12,31 @@ import java.util.Objects;
 @Getter
 @Setter
 @ToString
-@RequiredArgsConstructor
+@AllArgsConstructor
 @Entity
 public class SiteDB {
 
     @Id
-    @NonNull
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.AUTO, nullable = false)
     private int id;
 
-    @NonNull
-    @Column(columnDefinition = "ENUM('INDEXING', 'INDEXED', 'FAILED')")
+    @Column(columnDefinition = "ENUM('INDEXING', 'INDEXED', 'FAILED')", nullable = false)
     private Indexing status;            // статус состояние: Индексируется, Индексация выполнена, Индексация провалена
 
-    @NonNull
-    @Column(columnDefinition = "DATETIME")
+    @Column(columnDefinition = "DATETIME", nullable = false)
     private LocalDateTime status_time;  // дата и время получения статуса (обновляется при добавлении новой страницы в PageDB
 
-    @Nullable
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT", nullable = true)
     private String last_error;          // текст ошибки индексации или NULL, если её не было
 
-    @NonNull
-    @Column(columnDefinition = "VARCHAR(255)")
+    @Column(columnDefinition = "VARCHAR(255)", nullable = false)
     private String url;                 // адрес главной страницы сайта
 
-    @NonNull
-    @Column(columnDefinition = "VARCHAR(255)")
+    @Column(columnDefinition = "VARCHAR(255)", nullable = false)
     private String name;                // имя сайта
 
     public SiteDB() {}
+
 
     @Override
     public boolean equals(Object o) {

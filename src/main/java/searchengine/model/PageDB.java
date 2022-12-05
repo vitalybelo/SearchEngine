@@ -10,7 +10,7 @@ import java.util.Objects;
 @Getter
 @Setter
 @ToString
-@RequiredArgsConstructor
+@AllArgsConstructor
 @Entity
 public class PageDB {
 
@@ -20,17 +20,17 @@ public class PageDB {
     private int id;
 
     @NonNull
-    private int site_id;        // ID веб-сайта из таблицы site
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ToString.Exclude
+    private SiteDB site_id;     // ID веб-сайта из таблицы site
 
-    @NonNull
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT", nullable = false)
     private String path;        // адрес страницы от корня (должен начинаться слэшем, например: /news/372189/)
 
     @NonNull
     private int code;           // код HTTP-ответа, полученный при запросе страницы (например, 200, 305, 404 ...)
 
-    @NonNull
-    @Column(columnDefinition = "MEDIUMTEXT")
+    @Column(columnDefinition = "MEDIUMTEXT", nullable = false)
     private String content;     // контент страницы (HTML-код)
 
     public PageDB() {}
