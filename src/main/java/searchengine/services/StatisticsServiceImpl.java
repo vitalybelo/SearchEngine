@@ -18,7 +18,7 @@ import java.util.Random;
 public class StatisticsServiceImpl implements StatisticsService {
 
     private final Random random = new Random();
-    private final SitesList sites;              // получение списка сайтов из application.yaml в классе SiteList
+    private final SitesList sites;              // получение списка сайтов из application.yml в классе SiteList
 
     @Override
     public StatisticsResponse getStatistics() {

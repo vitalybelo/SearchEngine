@@ -17,7 +17,6 @@ import searchengine.services.StatisticsService;
 public class ApiController {
 
     private final StatisticsService statisticsService;
-    private StatisticsResponse response = new StatisticsResponse();
     private StatisticsData statisticData = new StatisticsData();
 
     public ApiController(StatisticsService statisticsService) {
@@ -27,7 +26,7 @@ public class ApiController {
     @GetMapping("/statistics")
     public ResponseEntity<StatisticsResponse> statistics()
     {
-        response = statisticsService.getStatistics();
+        StatisticsResponse response = statisticsService.getStatistics();
         statisticData = response.getStatistics();
         return ResponseEntity.ok(response);
     }
