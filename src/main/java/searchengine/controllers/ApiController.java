@@ -10,6 +10,7 @@ import searchengine.config.Site;
 import searchengine.dto.statistics.RequestResponse;
 import searchengine.dto.statistics.StatisticsData;
 import searchengine.dto.statistics.StatisticsResponse;
+import searchengine.repositiry.Sites;
 import searchengine.repositiry.SitesRepository;
 import searchengine.services.StatisticsService;
 
