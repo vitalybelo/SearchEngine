@@ -37,7 +37,8 @@ public class SiteEntity {
     @Column(columnDefinition = "TEXT", nullable = true)
     private String last_error;
 
-    @OneToMany(mappedBy = "site", cascade = CascadeType.ALL, orphanRemoval = true)
+
+    @OneToMany(mappedBy = "site", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<PageEntity> pages;
 
     public List<PageEntity> getPages() {
