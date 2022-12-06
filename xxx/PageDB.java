@@ -3,6 +3,7 @@ package searchengine.model;
 import lombok.*;
 import org.hibernate.Hibernate;
 import org.springframework.lang.NonNull;
+import searchengine.xxx.Site;
 
 import javax.persistence.*;
 import java.util.Objects;

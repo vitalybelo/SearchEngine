@@ -10,21 +10,22 @@ import searchengine.config.Site;
 import searchengine.dto.statistics.RequestResponse;
 import searchengine.dto.statistics.StatisticsData;
 import searchengine.dto.statistics.StatisticsResponse;
-import searchengine.model.SiteRepository;
+import searchengine.repositiry.SitesRepository;
 import searchengine.services.StatisticsService;
 
 @RestController
 @RequestMapping("/api")
 public class ApiController {
 
-    @Autowired
-    private SiteRepository siteRepository;
     private final StatisticsService statisticsService;
-    private StatisticsData statisticData = new StatisticsData();
+    private StatisticsData statisticData;
 
-    public ApiController(SiteRepository siteDBRepository, StatisticsService statisticsService) {
-        this.siteRepository = siteDBRepository;
+    @Autowired
+    private SitesRepository sitesRepository;
+
+    public ApiController(SitesRepository sitesRepository, StatisticsService statisticsService) {
         this.statisticsService = statisticsService;
+        this.sitesRepository = sitesRepository;
     }
 
     @GetMapping("/statistics")
@@ -35,6 +36,7 @@ public class ApiController {
         return ResponseEntity.ok(response);
     }
 
+
     @GetMapping("/startIndexing")
     public ResponseEntity<RequestResponse> startIndexing()
     {
@@ -42,7 +44,7 @@ public class ApiController {
         if (statisticData.getTotal().isIndexing()) {
             return ResponseEntity.ok(new RequestResponse(false, "Индексация уже запущена"));
         }
-        // если индексация не запущена - запускаем и выходим
+        // если индексация не запущена - запускаем сервис и выходим
         statisticData.getTotal().setIndexing(true);
         return ResponseEntity.ok(new RequestResponse(true, ""));
     }
@@ -51,11 +53,11 @@ public class ApiController {
     public ResponseEntity<RequestResponse> stopIndexing()
     {
 
-        // индексация не запущена, останавливать нечего
+        // индексация не запущена, останавливать нечего - на выход
         if (!statisticData.getTotal().isIndexing()) {
             return ResponseEntity.ok(new RequestResponse(false, "индексация не запущена"));
         }
-        // останавливаем индексацию
+        // останавливаем сервис индексации
         statisticData.getTotal().setIndexing(false);
         return ResponseEntity.ok(new RequestResponse(true, ""));
     }
