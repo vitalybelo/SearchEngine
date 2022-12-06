@@ -6,7 +6,6 @@ import javax.persistence.*;
 @Entity
 @Setter
 @Getter
-@AllArgsConstructor
 public class Sites {
 
     @Id
