@@ -10,8 +10,7 @@ import searchengine.config.Site;
 import searchengine.dto.statistics.RequestResponse;
 import searchengine.dto.statistics.StatisticsData;
 import searchengine.dto.statistics.StatisticsResponse;
-import searchengine.repositiry.Sites;
-import searchengine.repositiry.SitesRepository;
+import searchengine.repository.SitesRepository;
 import searchengine.services.StatisticsService;
 
 @RestController
@@ -21,12 +20,8 @@ public class ApiController {
     private final StatisticsService statisticsService;
     private StatisticsData statisticData;
 
-    @Autowired
-    private SitesRepository sitesRepository;
-
     public ApiController(SitesRepository sitesRepository, StatisticsService statisticsService) {
         this.statisticsService = statisticsService;
-        this.sitesRepository = sitesRepository;
     }
 
     @GetMapping("/statistics")
@@ -64,8 +59,8 @@ public class ApiController {
     }
 
     @PostMapping("/indexPage")
-    public void indexPage(Site site) {
-
+    public void indexPage(Site site)
+    {
         System.out.println(site.getName());
         System.out.println(site.getUrl());
     }
