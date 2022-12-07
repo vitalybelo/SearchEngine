@@ -2,14 +2,9 @@ package searchengine.services;
 
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
-import org.jsoup.Connection;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import searchengine.dto.statistics.DetailedStatisticsItem;
-import searchengine.model.PageEntity;
 import searchengine.model.SiteEntity;
 import searchengine.repository.PageEntityRepository;
 import searchengine.repository.SiteEntityRepository;
@@ -21,13 +16,14 @@ import java.util.concurrent.ForkJoinPool;
 
 @Setter
 @Service
-public class SearchService {
+public class IndexingService {
 
+    @Autowired
     private SiteEntityRepository siteRepository;
     private PageEntityRepository pageRepository;
     private List<DetailedStatisticsItem> searchItems;
 
-    public SearchService(@NotNull List<DetailedStatisticsItem> searchItems) {
+    public IndexingService(@NotNull List<DetailedStatisticsItem> searchItems) {
         this.searchItems = searchItems;
     }
 
@@ -37,7 +33,8 @@ public class SearchService {
         System.out.println("Start indexing for:");
         System.out.println(searchItems.get(index).getName() + " :: " + searchItems.get(index).getUrl());
         startIndexing(searchItems.get(index));
-//        for (DetailedStatisticsItem item : searchItems) {
+
+        //        for (DetailedStatisticsItem item : searchItems) {
 //
 //            System.out.println(item.getName() + " :: " + item.getUrl());
 //            startIndexing(item);
@@ -65,8 +62,6 @@ public class SearchService {
 
         // Создаем записи в таблице page
         for (String s : uniqueURL) {
-            PageEntity page =
-
         }
 
     }

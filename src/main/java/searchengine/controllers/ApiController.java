@@ -12,9 +12,8 @@ import searchengine.dto.statistics.StatisticsData;
 import searchengine.dto.statistics.StatisticsResponse;
 import searchengine.repository.PageEntityRepository;
 import searchengine.repository.SiteEntityRepository;
-import searchengine.services.SearchService;
+import searchengine.services.IndexingService;
 import searchengine.services.StatisticsService;
-
 
 @RestController
 @RequestMapping("/api")
@@ -26,7 +25,7 @@ public class ApiController {
     private PageEntityRepository pageRepository;
 
     private final StatisticsService statisticsService;
-    private SearchService searchService;
+    private IndexingService indexingService;
     private StatisticsData statisticData;
 
     public ApiController(StatisticsService statisticsService) {
@@ -39,9 +38,9 @@ public class ApiController {
         StatisticsResponse response = statisticsService.getStatistics();
         statisticData = response.getStatistics();
 
-        searchService = new SearchService(statisticData.getDetailed());
-        searchService.setSiteRepository(siteRepository);
-        searchService.setPageRepository(pageRepository);
+        indexingService = new IndexingService(statisticData.getDetailed());
+        indexingService.setSiteRepository(siteRepository);
+        indexingService.setPageRepository(pageRepository);
 
         return ResponseEntity.ok(response);
     }
@@ -56,7 +55,7 @@ public class ApiController {
         }
         // если индексация не запущена - запускаем сервис и выходим
         statisticData.getTotal().setIndexing(true);
-        searchService.startIndexingAll();
+        indexingService.startIndexingAll();
         return ResponseEntity.ok(new RequestResponse(true, ""));
     }
 
