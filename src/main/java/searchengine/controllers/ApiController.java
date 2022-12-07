@@ -1,25 +1,35 @@
 package searchengine.controllers;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import searchengine.config.Site;
-import searchengine.dto.statistics.RequestResponse;
+import searchengine.dto.api.RequestResponse;
 import searchengine.dto.statistics.StatisticsData;
 import searchengine.dto.statistics.StatisticsResponse;
+import searchengine.repository.PageEntityRepository;
 import searchengine.repository.SiteEntityRepository;
+import searchengine.services.SearchService;
 import searchengine.services.StatisticsService;
+
 
 @RestController
 @RequestMapping("/api")
 public class ApiController {
 
+    @Autowired
+    private SiteEntityRepository siteRepository;
+    @Autowired
+    private PageEntityRepository pageRepository;
+
     private final StatisticsService statisticsService;
+    private SearchService searchService;
     private StatisticsData statisticData;
 
-    public ApiController(SiteEntityRepository sitesRepository, StatisticsService statisticsService) {
+    public ApiController(StatisticsService statisticsService) {
         this.statisticsService = statisticsService;
     }
 
@@ -28,6 +38,11 @@ public class ApiController {
     {
         StatisticsResponse response = statisticsService.getStatistics();
         statisticData = response.getStatistics();
+
+        searchService = new SearchService(statisticData.getDetailed());
+        searchService.setSiteRepository(siteRepository);
+        searchService.setPageRepository(pageRepository);
+
         return ResponseEntity.ok(response);
     }
 
@@ -41,6 +56,7 @@ public class ApiController {
         }
         // если индексация не запущена - запускаем сервис и выходим
         statisticData.getTotal().setIndexing(true);
+        searchService.startIndexingAll();
         return ResponseEntity.ok(new RequestResponse(true, ""));
     }
 

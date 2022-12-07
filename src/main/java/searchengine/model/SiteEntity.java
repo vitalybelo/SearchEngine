@@ -8,6 +8,7 @@ import java.util.List;
 @Entity(name = "site")
 @Setter
 @Getter
+@NoArgsConstructor
 public class SiteEntity {
 
     @Id
@@ -15,11 +16,11 @@ public class SiteEntity {
     private int id;
 
     // адрес главной страницы сайта
-    @Column(columnDefinition = "VARCHAR(255)", nullable = false)
+    @Column(columnDefinition = "VARCHAR(255)", nullable = false, unique = true)
     private String url;
 
     // имя сайта - возможно заголовок
-    @Column(columnDefinition = "VARCHAR(255)", nullable = false)
+    @Column(columnDefinition = "VARCHAR(255)", nullable = false, unique = true)
     private String name;
 
     // текущий статус полной индексации сайта (в процессе - закончена - провалена)
@@ -45,4 +46,11 @@ public class SiteEntity {
         return pages;
     }
 
+    public SiteEntity(String name, String url) {
+        this.name = name;
+        this.url = url;
+        status = Status.INDEXING;
+        status_time = new Date(System.currentTimeMillis());
+        last_error = null;
+    }
 }

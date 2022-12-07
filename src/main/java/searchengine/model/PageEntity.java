@@ -1,15 +1,14 @@
 package searchengine.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import javax.persistence.*;
 
-@Entity
 @Getter
 @Setter
-@Table(name = "page", indexes = {@Index(name = "page_indexes", columnList = "id, path", unique = true)})
+@Entity(name = "page")
+@Table(indexes = {@Index(name = "idx_path", columnList = "path", unique = true)})
 public class PageEntity {
 
     @Id
@@ -22,11 +21,11 @@ public class PageEntity {
     private SiteEntity site;
 
     // адрес страницы от корня сайта (должен начинаться со слэша, например: /news/372189/
-    @Column(columnDefinition = "TEXT", nullable = false, unique = true)
+    @Column(columnDefinition = "TEXT", nullable = false, length = 255)
     private String path;
 
-    // код HTTP-ответа, полученный при запросе страницы (например, 200, 404, 500 или другие
-    @NonNull
+    // код HTTP-ответа, полученный при запросе страницы (например, 200, 404, 500 или другие)
+    @Column(nullable = true)
     private int code;
 
     // контент страницы (HTML-код)
@@ -38,5 +37,10 @@ public class PageEntity {
         return site;
     }
 
-
+    public PageEntity(SiteEntity site, String path, int code, String content) {
+        this.site = site;
+        this.path = path;
+        this.code = code;
+        this.content = content;
+    }
 }
