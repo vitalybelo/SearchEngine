@@ -29,7 +29,7 @@ public class IndexingService {
 
     public void startIndexingAll()
     {
-        int index = 2;
+        int index = 1;
         System.out.println("Start indexing for:");
         System.out.println(searchItems.get(index).getName() + " :: " + searchItems.get(index).getUrl());
         startIndexing(searchItems.get(index));
@@ -56,7 +56,7 @@ public class IndexingService {
         siteRepository.save(site);
 
         // Поиск ссылок по выбранному URL
-        RecursiveLinkParser parser = new RecursiveLinkParser(site.getUrl());
+        RecursiveLinkParser parser = new RecursiveLinkParser(site.getUrl(), urik);
         ForkJoinPool commonPool = ForkJoinPool.commonPool();
         TreeSet<String> uniqueURL = commonPool.invoke(parser);
 

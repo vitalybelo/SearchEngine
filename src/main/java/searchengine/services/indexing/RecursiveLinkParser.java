@@ -6,30 +6,41 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import java.io.IOException;
+import java.net.URL;
 import java.util.*;
 import java.util.concurrent.RecursiveTask;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class RecursiveLinkParser extends RecursiveTask<TreeSet<String>> {
 
-    static int TIME_OUT = 3000;
-    static int MAX_URLS = 50;
-    private final AtomicInteger urlCounter = new AtomicInteger();
-    private final TreeSet<String> uniqueURL = new TreeSet<>();
+    public final static int TIME_OUT = 3000;
+    public final static int MAX_URLS = 5000;
+    public static AtomicInteger urlCounter = new AtomicInteger();
+    public static TreeSet<String> uniqueURL = new TreeSet<>();
 
     private final String site;
+    private String siteurl;
 
     public RecursiveLinkParser(String site) {
         this.site = site;
+        this.urik = urik;
+        URL urlHost = new URL(site);
+        try {
+            siteurl = urlHost.getHost();
+            hostURL = hostURL.replace("www.","");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
-    protected TreeSet<String> compute() {
-
+    protected TreeSet<String> compute()
+    {
         UserAgent userAgent = new UserAgent();
 
         List<RecursiveLinkParser> parserTasks = new ArrayList<>();
         try {
+
             Thread.sleep(150);
             Connection connection = Jsoup
                     .connect(site)
@@ -49,7 +60,7 @@ public class RecursiveLinkParser extends RecursiveTask<TreeSet<String>> {
                 if (uniqueURL.add(url)) {
                     urlCounter.incrementAndGet();
                         System.out.println(url);
-                    RecursiveLinkParser task = new RecursiveLinkParser(url);
+                    RecursiveLinkParser task = new RecursiveLinkParser(url, urik);
                     task.fork();
                     parserTasks.add(task);
                 }
@@ -71,7 +82,8 @@ public class RecursiveLinkParser extends RecursiveTask<TreeSet<String>> {
         if (!url.startsWith(site)) return true;
         if (url.endsWith(".pdf")) return true;
         if (url.contains("#")) return true;
-        return url.contains(" ");
+        if (url.contains(" ")) return true;
+        return false;
     }
 
     public int getUrlCounter() {
