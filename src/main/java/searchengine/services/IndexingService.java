@@ -2,44 +2,47 @@ package searchengine.services;
 
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 import searchengine.dto.statistics.DetailedStatisticsItem;
+import searchengine.dto.statistics.StatisticsData;
 import searchengine.model.SiteEntity;
 import searchengine.repository.PageEntityRepository;
 import searchengine.repository.SiteEntityRepository;
 import searchengine.services.indexing.RecursiveLinkParser;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.TreeSet;
 import java.util.concurrent.ForkJoinPool;
 
 @Setter
-@Service
 public class IndexingService {
 
-    @Autowired
     private SiteEntityRepository siteRepository;
     private PageEntityRepository pageRepository;
     private List<DetailedStatisticsItem> searchItems;
+    private StatisticsData statisticsData;
+    private List<ForkJoinPool> joinPools = new ArrayList<>();
+    private List<Thread> threads = new ArrayList<>();
 
-    public IndexingService(@NotNull List<DetailedStatisticsItem> searchItems) {
-        this.searchItems = searchItems;
+    public IndexingService(@NotNull StatisticsData statisticsData, SiteEntityRepository site, PageEntityRepository page)
+    {
+        this.statisticsData = statisticsData;
+        this.searchItems = statisticsData.getDetailed();
+        this.siteRepository = site;
+        this.pageRepository = page;
     }
 
     public void startIndexingAll()
     {
-        int index = 1;
-        System.out.println("Start indexing for:");
-        System.out.println(searchItems.get(index).getName() + " :: " + searchItems.get(index).getUrl());
-        startIndexing(searchItems.get(index));
-
-        //        for (DetailedStatisticsItem item : searchItems) {
-//
-//            System.out.println(item.getName() + " :: " + item.getUrl());
-//            startIndexing(item);
-//
-//        }
+        RecursiveLinkParser.urlCounter.set(0);
+        RecursiveLinkParser.indexing.set(true);
+        statisticsData.getTotal().setIndexing(true);
+        for (DetailedStatisticsItem item : searchItems)
+        {
+            System.out.println("Start indexing for: " + item.getName() + " :: " + item.getUrl());
+            Thread thread = new Thread(() -> { startIndexing(item); });
+            threads.add(thread);
+            thread.start();
+        }
     }
 
     public void startIndexing(@NotNull DetailedStatisticsItem item)
@@ -52,32 +55,31 @@ public class IndexingService {
             }
         }
         // Cоздаем новую запись по имени и адресу сайта
+        String s = RecursiveLinkParser.smartUrl(item.getUrl());
+        if (s != null) item.setUrl(s);
         SiteEntity site = new SiteEntity(item.getName(), item.getUrl());
         siteRepository.save(site);
 
         // Поиск ссылок по выбранному URL
-        RecursiveLinkParser parser = new RecursiveLinkParser(site.getUrl(), urik);
+        RecursiveLinkParser parser = new RecursiveLinkParser(site.getUrl());
         ForkJoinPool commonPool = ForkJoinPool.commonPool();
-        TreeSet<String> uniqueURL = commonPool.invoke(parser);
-
-        // Создаем записи в таблице page
-        for (String s : uniqueURL) {
-        }
-
+        joinPools.add(commonPool);
+        commonPool.invoke(parser);
+        System.out.println("Scanning for: " + site.getUrl() + " stopped");
     }
 
-    public static String spaceTab(String s) {
-        int count = 0;
-        for (int i = 0; i < s.length(); i++) {
-            if (s.charAt(i) == '/') count++;
+    public void stopIndexing()
+    {
+        statisticsData.getTotal().setIndexing(false);
+        RecursiveLinkParser.indexing.set(false);
+        for (ForkJoinPool task : joinPools) {
+            if (!task.isShutdown()) task.shutdown();
         }
-        StringBuilder sb = new StringBuilder();
-        if (count > 3) {
-            sb.append("\t".repeat(count - 3));
+        for (Thread thread : threads) {
+            if (thread.isAlive()) thread.interrupt();
         }
-        sb.append(s);
-        return sb.toString();
+        joinPools.clear();
+        threads.clear();
     }
-
 
 }

@@ -1,6 +1,6 @@
 package searchengine.services.indexing;
 
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class UserAgent {
 
@@ -46,21 +46,20 @@ public class UserAgent {
             "msnbot-media/1.0 (+http://search.msn.com/msnbot.htm)",
             "msnbot-media/1.1 (+http://search.msn.com/msnbot.htm)",
             "msnbot-news (+http://search.msn.com/msnbot.htm)",
-            "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)"
+            "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)",
     };
 
     public String get()
     {
-        Random rd = new Random();
         int bound = userAgentList.length;
-        return userAgentList[rd.nextInt(bound)];
+        int index = ThreadLocalRandom.current().nextInt(0, bound);
+        if (index >= 0 && index < bound)
+            return userAgentList[index];
+        return userAgentList[5];
     }
 
-    public int size() {
-        return userAgentList.length;
-    }
-
-    public String getAt(int index) {
+    public String getAt(int index)
+    {
         if (index < 0) index = 0;
         int last = userAgentList.length - 1;
         if (index > last) index = last;

@@ -37,14 +37,9 @@ public class ApiController {
     {
         StatisticsResponse response = statisticsService.getStatistics();
         statisticData = response.getStatistics();
-
-        indexingService = new IndexingService(statisticData.getDetailed());
-        indexingService.setSiteRepository(siteRepository);
-        indexingService.setPageRepository(pageRepository);
-
+        indexingService = new IndexingService(statisticData, siteRepository, pageRepository);
         return ResponseEntity.ok(response);
     }
-
 
     @GetMapping("/startIndexing")
     public ResponseEntity<RequestResponse> startIndexing()
@@ -54,20 +49,20 @@ public class ApiController {
             return ResponseEntity.ok(new RequestResponse(false, "Индексация уже запущена"));
         }
         // если индексация не запущена - запускаем сервис и выходим
-        statisticData.getTotal().setIndexing(true);
         indexingService.startIndexingAll();
+        statisticData.getTotal().setIndexing(true);
         return ResponseEntity.ok(new RequestResponse(true, ""));
     }
 
     @GetMapping("/stopIndexing")
     public ResponseEntity<RequestResponse> stopIndexing()
     {
-
         // индексация не запущена, останавливать нечего - на выход
         if (!statisticData.getTotal().isIndexing()) {
             return ResponseEntity.ok(new RequestResponse(false, "индексация не запущена"));
         }
         // останавливаем сервис индексации
+        indexingService.stopIndexing();
         statisticData.getTotal().setIndexing(false);
         return ResponseEntity.ok(new RequestResponse(true, ""));
     }
