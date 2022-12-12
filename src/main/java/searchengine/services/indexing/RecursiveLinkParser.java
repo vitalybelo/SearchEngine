@@ -6,37 +6,48 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import searchengine.dto.statistics.StatisticsData;
+import searchengine.repository.PageEntityRepository;
+import searchengine.repository.SiteEntityRepository;
 
 import java.util.*;
+import java.util.concurrent.RecursiveAction;
 import java.util.concurrent.RecursiveTask;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
-public class RecursiveLinkParser extends RecursiveTask<TreeSet<String>> {
+import static java.lang.Thread.sleep;
+
+public class RecursiveLinkParser extends RecursiveAction {
 
     public final static int TIME_OUT = 5000;
-    public final static int MAX_URLS = 5000;
-    public static TreeSet<String> uniqueURL = new TreeSet<>();
-    public static AtomicInteger urlCounter = new AtomicInteger();
-    public static AtomicBoolean indexing = new AtomicBoolean();
+    public static TreeSet<String> uniqueURL;
 
     private final UserAgent userAgent = new UserAgent();
     private final String urlSite;
+    private StatisticsData data;
+    private SiteEntityRepository site;
+    private PageEntityRepository page;
 
-    public RecursiveLinkParser(@NotNull String urlSite) {
+    public RecursiveLinkParser(@NotNull String urlSite, StatisticsData data)
+    {
         this.urlSite = urlSite;
+        this.data = data;
+        uniqueURL = new TreeSet<>();
+    }
+
+    public void setRepositoryData(SiteEntityRepository site, PageEntityRepository page) {
+        this.site = site;
+        this.page = page;
     }
 
     @Override
-    protected TreeSet<String> compute()
+    protected void compute()
     {
-        if (!indexing.get()) return uniqueURL;
+        if (!data.getTotal().isIndexing()) return;
         List<RecursiveLinkParser> parserTasks = new ArrayList<>();
-
         try {
             // пауза частоты индексирования
-            Thread.sleep(200);
-            // подкулючаемся к странице
+            sleep(200);
+            // создаем запрос к странице
             Connection connection = Jsoup
                     .connect(urlSite)
                     .userAgent(userAgent.get())
@@ -45,37 +56,35 @@ public class RecursiveLinkParser extends RecursiveTask<TreeSet<String>> {
                     .ignoreHttpErrors(true)
                     .timeout(TIME_OUT)
                     .newRequest();
-            // парсим в документ страницу сайта и выбираем тэги ссылок
+            // парсим в документ страницу, собираем все теги со ссылками
             Document doc = connection.execute().parse();
             Elements links = doc.select("a[href]");
 
-            for (Element link : links) {
-                if (urlCounter.get() >= MAX_URLS) break;
+            for (Element link : links)
+            {
+                if (!data.getTotal().isIndexing()) break;
                 String url = link.attr("abs:href");
                 if (isLinkIgnore(url)) continue;
-                if (uniqueURL.add(url)) {
-                    urlCounter.incrementAndGet();
-                        System.out.println(url);
-                    RecursiveLinkParser task = new RecursiveLinkParser(url);
-                    task.fork();
-                    parserTasks.add(task);
+                if (uniqueURL.add(url))
+                {
+                    System.out.println(url);
+                    synchronized (parserTasks) {
+                        RecursiveLinkParser task = new RecursiveLinkParser(url, data);
+                        parserTasks.add(task);
+                        task.fork();
+                    }
                 }
             }
-        } catch (InterruptedException ignored) {
-            System.out.println("Recursive thread stopped");
         } catch (Exception e) {
             e.printStackTrace();
         }
-
         for (RecursiveLinkParser parserTask : parserTasks) {
             parserTask.join();
         }
-        return uniqueURL;
     }
 
     public boolean isLinkIgnore(String url)
     {
-        if (url == null) return true;
         if (url.isEmpty()) return true;
         if (!url.startsWith(urlSite)) return true;
         if (url.endsWith(".pdf")) return true;

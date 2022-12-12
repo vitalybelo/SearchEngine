@@ -50,7 +50,6 @@ public class ApiController {
         }
         // если индексация не запущена - запускаем сервис и выходим
         indexingService.startIndexingAll();
-        statisticData.getTotal().setIndexing(true);
         return ResponseEntity.ok(new RequestResponse(true, ""));
     }
 
@@ -63,7 +62,6 @@ public class ApiController {
         }
         // останавливаем сервис индексации
         indexingService.stopIndexing();
-        statisticData.getTotal().setIndexing(false);
         return ResponseEntity.ok(new RequestResponse(true, ""));
     }
 

@@ -20,8 +20,7 @@ public class IndexingService {
     private PageEntityRepository pageRepository;
     private List<DetailedStatisticsItem> searchItems;
     private StatisticsData statisticsData;
-    private List<ForkJoinPool> joinPools = new ArrayList<>();
-    private List<Thread> threads = new ArrayList<>();
+    List<Thread> threads = new ArrayList<>();
 
     public IndexingService(@NotNull StatisticsData statisticsData, SiteEntityRepository site, PageEntityRepository page)
     {
@@ -33,8 +32,6 @@ public class IndexingService {
 
     public void startIndexingAll()
     {
-        RecursiveLinkParser.urlCounter.set(0);
-        RecursiveLinkParser.indexing.set(true);
         statisticsData.getTotal().setIndexing(true);
         for (DetailedStatisticsItem item : searchItems)
         {
@@ -61,9 +58,9 @@ public class IndexingService {
         siteRepository.save(site);
 
         // Поиск ссылок по выбранному URL
-        RecursiveLinkParser parser = new RecursiveLinkParser(site.getUrl());
+        RecursiveLinkParser parser = new RecursiveLinkParser(site.getUrl(), statisticsData);
+        parser.setRepositoryData(siteRepository, pageRepository);
         ForkJoinPool commonPool = ForkJoinPool.commonPool();
-        joinPools.add(commonPool);
         commonPool.invoke(parser);
         System.out.println("Scanning for: " + site.getUrl() + " stopped");
     }
@@ -71,15 +68,17 @@ public class IndexingService {
     public void stopIndexing()
     {
         statisticsData.getTotal().setIndexing(false);
-        RecursiveLinkParser.indexing.set(false);
-        for (ForkJoinPool task : joinPools) {
-            if (!task.isShutdown()) task.shutdown();
+        for (Thread t : threads)
+        {
+            if (t.isAlive()) {
+                try {
+                    t.join();
+                } catch (InterruptedException e) { e.printStackTrace(); }
+            }
+            System.out.println(t.getName() + " :: " + t.getState());
         }
-        for (Thread thread : threads) {
-            if (thread.isAlive()) thread.interrupt();
-        }
-        joinPools.clear();
         threads.clear();
     }
+
 
 }

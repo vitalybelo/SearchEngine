@@ -53,4 +53,6 @@ public class SiteEntity {
         status_time = new Date(System.currentTimeMillis());
         last_error = null;
     }
+
+
 }
