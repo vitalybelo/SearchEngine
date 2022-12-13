@@ -8,31 +8,34 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import searchengine.model.PageEntity;
 import searchengine.model.SiteEntity;
+import searchengine.model.Status;
 
 import java.util.*;
 import java.util.concurrent.RecursiveAction;
+
 import static java.lang.Thread.sleep;
 
 public class RecursiveLinkParser extends RecursiveAction {
 
     public final static int TIME_OUT = 5000;
-    public static TreeSet<String> uniqueURL;
+    public final static int MAX_URLS = 10;
+    public static TreeSet<String> uniqueURL = new TreeSet<>();;
 
     private final UserAgent userAgent = new UserAgent();
+    private final DataPackage data;
     private final String urlSite;
-    private DataPackage data;
 
     public RecursiveLinkParser(@NotNull String urlSite, DataPackage dataPackage)
     {
         this.data = dataPackage;
         this.urlSite = urlSite;
-        uniqueURL = new TreeSet<>();
     }
 
     @Override
     protected void compute()
     {
         if (!data.isIndexing()) return;
+        //if (data.getSiteEntity().getPages().size() >= MAX_URLS) return;
         List<RecursiveLinkParser> parserTasks = new ArrayList<>();
         try {
             // пауза частоты индексирования
@@ -44,7 +47,7 @@ public class RecursiveLinkParser extends RecursiveAction {
                     .referrer("https://google.com")
                     .ignoreContentType(true)
                     .ignoreHttpErrors(true)
-                    .timeout(TIME_OUT)
+                        .timeout(TIME_OUT)
                     .newRequest();
             // парсим в документ страницу, собираем все теги со ссылками
             Document doc = connection.execute().parse();
@@ -54,21 +57,24 @@ public class RecursiveLinkParser extends RecursiveAction {
             for (Element link : links)
             {
                 if (!data.isIndexing()) break;
+                //if (data.getSiteEntity().getPages().size() >= MAX_URLS) break;
                 String url = link.attr("abs:href");
                 if (isLinkIgnore(url)) continue;
-                if (uniqueURL.add(url))
+                PageEntity page = new PageEntity(url, 200, content);
+                //if (uniqueURL.add(url))
+                if (data.getSiteEntity().getPages().add(page))
                 {
+                    // запись PAGE в таблицу SITE
+                    data.getSiteEntity().setStatus_time(new Date(System.currentTimeMillis()));
+                    data.getSiteEntity().addPage(new PageEntity(url, 200, content));
+                    //data.getSiteEntityRepository().save(data.getSiteEntity());
+                    // переходим по ссылке и делаем тоже самое там
                     synchronized (parserTasks) {
                         RecursiveLinkParser task = new RecursiveLinkParser(url, data);
                         parserTasks.add(task);
                         task.fork();
-                        // запись в таблицу PAGE
-                        //PageEntity pageEntity = new PageEntity(data.getSiteEntity(), url, 200, content);
-                        //data.getPageEntityRepository().save(pageEntity);
-                        // сохраняем дату удачно записанной страницы
-                        data.getSiteEntity().setStatus_time(new Date(System.currentTimeMillis()));
-                        System.out.println(url);
                     }
+                    System.out.println(url);
                 }
             }
         } catch (Exception e) {
@@ -77,6 +83,16 @@ public class RecursiveLinkParser extends RecursiveAction {
         for (RecursiveLinkParser parserTask : parserTasks) {
             parserTask.join();
         }
+    }
+
+    public SiteEntity getResult()
+    {
+        if (data.isIndexing()) {
+            data.getSiteEntity().setStatus(Status.INDEXED);
+        } else {
+            data.getSiteEntity().setStatus(Status.FAILED);
+        }
+        return data.getSiteEntity();
     }
 
     public boolean isLinkIgnore(String url)
@@ -89,7 +105,8 @@ public class RecursiveLinkParser extends RecursiveAction {
         return url.contains(" ");
     }
 
-    public static String smartUrl(String site) {
+    public static String smartUrl(String site)
+    {
         String urlPattern = null;
         try {
             Document doc = Jsoup.connect(site).get();

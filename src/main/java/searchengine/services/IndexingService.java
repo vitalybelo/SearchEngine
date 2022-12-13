@@ -4,7 +4,6 @@ import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 import searchengine.dto.statistics.DetailedStatisticsItem;
 import searchengine.dto.statistics.StatisticsData;
-import searchengine.model.PageEntity;
 import searchengine.model.SiteEntity;
 import searchengine.repository.PageEntityRepository;
 import searchengine.repository.SiteEntityRepository;
@@ -13,7 +12,6 @@ import searchengine.services.indexing.RecursiveLinkParser;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
 
 @Setter
@@ -23,6 +21,7 @@ public class IndexingService {
     private PageEntityRepository pageRepository;
     private List<DetailedStatisticsItem> searchItems;
     private StatisticsData statisticsData;
+    private SiteEntity siteEntity;
     List<Thread> threads = new ArrayList<>();
 
     public IndexingService(@NotNull StatisticsData statisticsData, SiteEntityRepository site, PageEntityRepository page)
@@ -54,8 +53,8 @@ public class IndexingService {
             }
         }
         // Создаем новую запись по имени и адресу сайта
-        String s = RecursiveLinkParser.smartUrl(item.getUrl());
-        SiteEntity siteEntity = new SiteEntity(item.getName(), (s == null ? item.getUrl() : s));
+        String url = RecursiveLinkParser.smartUrl(item.getUrl());
+        SiteEntity siteEntity = new SiteEntity(item.getName(), (url == null ? item.getUrl() : url));
         siteRepository.save(siteEntity);
 
         // Поиск ссылок по выбранному URL
@@ -64,7 +63,8 @@ public class IndexingService {
         ForkJoinPool commonPool = ForkJoinPool.commonPool();
         commonPool.invoke(parser);
 
-        System.out.println("Scanning for: " + siteEntity.getUrl() + " stopped");
+        this.siteEntity = parser.getResult();
+        System.out.println("\n" + this.siteEntity);
     }
 
     public void stopIndexing()
@@ -76,8 +76,7 @@ public class IndexingService {
                 try {
                     t.join();
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                    e.printStackTrace(); }
             }
             System.out.println(t.getName() + " :: " + t.getState());
         }

@@ -62,5 +62,11 @@ public class SiteEntity {
         last_error = null;
     }
 
-
+    @Override
+    public String toString() {
+        return "\tURL   = " + url + '\n' +
+               "\tname  = " + name + '\n' +
+               "\tdate  = " + status_time + '\n' +
+               "\tTotal pages = " + pages.size();
+    }
 }
