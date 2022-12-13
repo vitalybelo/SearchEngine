@@ -6,14 +6,11 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import searchengine.dto.statistics.StatisticsData;
-import searchengine.repository.PageEntityRepository;
-import searchengine.repository.SiteEntityRepository;
+import searchengine.model.PageEntity;
+import searchengine.model.SiteEntity;
 
 import java.util.*;
 import java.util.concurrent.RecursiveAction;
-import java.util.concurrent.RecursiveTask;
-
 import static java.lang.Thread.sleep;
 
 public class RecursiveLinkParser extends RecursiveAction {
@@ -23,26 +20,19 @@ public class RecursiveLinkParser extends RecursiveAction {
 
     private final UserAgent userAgent = new UserAgent();
     private final String urlSite;
-    private StatisticsData data;
-    private SiteEntityRepository site;
-    private PageEntityRepository page;
+    private DataPackage data;
 
-    public RecursiveLinkParser(@NotNull String urlSite, StatisticsData data)
+    public RecursiveLinkParser(@NotNull String urlSite, DataPackage dataPackage)
     {
+        this.data = dataPackage;
         this.urlSite = urlSite;
-        this.data = data;
         uniqueURL = new TreeSet<>();
-    }
-
-    public void setRepositoryData(SiteEntityRepository site, PageEntityRepository page) {
-        this.site = site;
-        this.page = page;
     }
 
     @Override
     protected void compute()
     {
-        if (!data.getTotal().isIndexing()) return;
+        if (!data.isIndexing()) return;
         List<RecursiveLinkParser> parserTasks = new ArrayList<>();
         try {
             // пауза частоты индексирования
@@ -59,19 +49,25 @@ public class RecursiveLinkParser extends RecursiveAction {
             // парсим в документ страницу, собираем все теги со ссылками
             Document doc = connection.execute().parse();
             Elements links = doc.select("a[href]");
+            String content = doc.body().toString();
 
             for (Element link : links)
             {
-                if (!data.getTotal().isIndexing()) break;
+                if (!data.isIndexing()) break;
                 String url = link.attr("abs:href");
                 if (isLinkIgnore(url)) continue;
                 if (uniqueURL.add(url))
                 {
-                    System.out.println(url);
                     synchronized (parserTasks) {
                         RecursiveLinkParser task = new RecursiveLinkParser(url, data);
                         parserTasks.add(task);
                         task.fork();
+                        // запись в таблицу PAGE
+                        //PageEntity pageEntity = new PageEntity(data.getSiteEntity(), url, 200, content);
+                        //data.getPageEntityRepository().save(pageEntity);
+                        // сохраняем дату удачно записанной страницы
+                        data.getSiteEntity().setStatus_time(new Date(System.currentTimeMillis()));
+                        System.out.println(url);
                     }
                 }
             }

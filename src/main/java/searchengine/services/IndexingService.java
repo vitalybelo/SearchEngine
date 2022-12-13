@@ -4,13 +4,16 @@ import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 import searchengine.dto.statistics.DetailedStatisticsItem;
 import searchengine.dto.statistics.StatisticsData;
+import searchengine.model.PageEntity;
 import searchengine.model.SiteEntity;
 import searchengine.repository.PageEntityRepository;
 import searchengine.repository.SiteEntityRepository;
+import searchengine.services.indexing.DataPackage;
 import searchengine.services.indexing.RecursiveLinkParser;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
 
 @Setter
@@ -42,8 +45,7 @@ public class IndexingService {
         }
     }
 
-    public void startIndexing(@NotNull DetailedStatisticsItem item)
-    {
+    public void startIndexing(@NotNull DetailedStatisticsItem item) {
         // Ищем совпадения по названию для записи в таблице site и удаляем если находим
         Iterable<SiteEntity> siteEntities = siteRepository.findAll();
         for (SiteEntity s : siteEntities) {
@@ -51,18 +53,18 @@ public class IndexingService {
                 siteRepository.delete(s);
             }
         }
-        // Cоздаем новую запись по имени и адресу сайта
+        // Создаем новую запись по имени и адресу сайта
         String s = RecursiveLinkParser.smartUrl(item.getUrl());
-        if (s != null) item.setUrl(s);
-        SiteEntity site = new SiteEntity(item.getName(), item.getUrl());
-        siteRepository.save(site);
+        SiteEntity siteEntity = new SiteEntity(item.getName(), (s == null ? item.getUrl() : s));
+        siteRepository.save(siteEntity);
 
         // Поиск ссылок по выбранному URL
-        RecursiveLinkParser parser = new RecursiveLinkParser(site.getUrl(), statisticsData);
-        parser.setRepositoryData(siteRepository, pageRepository);
+        DataPackage data = new DataPackage(statisticsData, siteEntity, siteRepository, pageRepository);
+        RecursiveLinkParser parser = new RecursiveLinkParser(siteEntity.getUrl(), data);
         ForkJoinPool commonPool = ForkJoinPool.commonPool();
         commonPool.invoke(parser);
-        System.out.println("Scanning for: " + site.getUrl() + " stopped");
+
+        System.out.println("Scanning for: " + siteEntity.getUrl() + " stopped");
     }
 
     public void stopIndexing()
@@ -73,7 +75,9 @@ public class IndexingService {
             if (t.isAlive()) {
                 try {
                     t.join();
-                } catch (InterruptedException e) { e.printStackTrace(); }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
             System.out.println(t.getName() + " :: " + t.getState());
         }

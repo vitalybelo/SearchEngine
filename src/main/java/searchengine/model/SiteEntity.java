@@ -2,13 +2,12 @@ package searchengine.model;
 
 import lombok.*;
 import javax.persistence.*;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
-@Entity(name = "site")
 @Setter
 @Getter
 @NoArgsConstructor
+@Entity(name = "site")
 public class SiteEntity {
 
     @Id
@@ -38,11 +37,20 @@ public class SiteEntity {
     @Column(columnDefinition = "TEXT", nullable = true)
     private String last_error;
 
+    @OneToMany(mappedBy = "site", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<PageEntity> pages = new HashSet<>();
 
-    @OneToMany(mappedBy = "site", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private List<PageEntity> pages;
+    public void addPage(PageEntity page) {
+        this.pages.add(page);
+        page.setSite(this);
+    }
 
-    public List<PageEntity> getPages() {
+    public void removePage(PageEntity page) {
+        this.pages.remove(page);
+        page.setSite(null);
+    }
+
+    public Set<PageEntity> getPages() {
         return pages;
     }
 

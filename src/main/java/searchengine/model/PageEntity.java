@@ -43,4 +43,9 @@ public class PageEntity {
         this.code = code;
         this.content = content;
     }
+
+    public PageEntity() {
+        this(null, "", 0, "");
+    }
+
 }
