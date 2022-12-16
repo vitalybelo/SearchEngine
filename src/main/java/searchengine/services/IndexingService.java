@@ -33,6 +33,7 @@ public class IndexingService {
 
     public void startIndexingAll()
     {
+        statisticsData.getTotal().setIndexing(true);
         threads.clear();
         // запуск индексирования по разным потокам
         for (DetailedStatisticsItem item : searchItems)
@@ -45,10 +46,10 @@ public class IndexingService {
 
     public synchronized void startIndexing(@NotNull DetailedStatisticsItem item)
     {
-        statisticsData.getTotal().setIndexing(true);
         // создаем умный url который возвращает сайт
         String smartUrl = RecursiveLinkParser.smartUrl(item.getUrl());
         if (smartUrl != null) item.setUrl(smartUrl);
+        System.out.println("\n\nSTART indexing for: " + item.getUrl() + "\n");
 
         // Ищем совпадения по названию для записи в таблице site и удаляем если находим
         Iterable<SiteEntity> siteEntities = siteRepository.findAll();
@@ -65,8 +66,7 @@ public class IndexingService {
         // Поиск ссылок по выбранному URL
         DataPackage data = new DataPackage(statisticsData, site, siteRepository, pageRepository);
         RecursiveLinkParser parser = new RecursiveLinkParser(item.getUrl(), data);
-        RecursiveLinkParser.uniqueURL.clear();
-        System.out.println("******** START PARSE: " + item.getUrl() + " :: " + RecursiveLinkParser.uniqueURL.size());
+        RecursiveLinkParser.uniqueURL.clear(); // dont remove
         ForkJoinPool commonPool = ForkJoinPool.commonPool();
         commonPool.invoke(parser);
 
@@ -74,7 +74,6 @@ public class IndexingService {
         site = parser.getResult();
         siteRepository.save(site);
         System.out.println("\n" + site);
-        //statisticsData.getTotal().setIndexing(false);
     }
 
     public void stopIndexing()
