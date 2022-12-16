@@ -9,6 +9,12 @@ import javax.persistence.*;
 @Setter
 @Entity(name = "page")
 @Table(indexes = {@Index(name = "idx_path", columnList = "path", unique = true)})
+/**
+ * !!! ВНИМАНИЕ !!! база данных search_engine должна иметь
+ *  character-set-server=utf8mb4
+ *  collation-server=utf8mb4_unicode_ci
+ *  для корректной работы при сохранении в базе текстов страниц
+ */
 public class PageEntity {
 
     @Id
@@ -16,8 +22,9 @@ public class PageEntity {
     private int id;
 
     // ID веб-сайта из таблицы site
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "site_id", nullable = false)
+    @JsonIgnore
     private SiteEntity site;
 
     // адрес страницы от корня сайта (должен начинаться со слэша, например: /news/372189/
@@ -52,5 +59,10 @@ public class PageEntity {
 
     public PageEntity() {
         this(null, "", 200, "");
+    }
+
+    @Override
+    public String toString() {
+        return path;
     }
 }

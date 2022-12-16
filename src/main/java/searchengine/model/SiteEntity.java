@@ -8,6 +8,12 @@ import java.util.*;
 @Getter
 @NoArgsConstructor
 @Entity(name = "site")
+/**
+ * !!! ВНИМАНИЕ !!! база данных search_engine должна иметь
+ *  character-set-server=utf8mb4
+ *  collation-server=utf8mb4_unicode_ci
+ *  для корректной работы при сохранении в базе текстов страниц
+ */
 public class SiteEntity {
 
     @Id
@@ -37,17 +43,12 @@ public class SiteEntity {
     @Column(columnDefinition = "TEXT", nullable = true)
     private String last_error;
 
-    @OneToMany(mappedBy = "site", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "site", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private Set<PageEntity> pages = new HashSet<>();
 
     public void addPage(PageEntity page) {
         this.pages.add(page);
         page.setSite(this);
-    }
-
-    public void removePage(PageEntity page) {
-        this.pages.remove(page);
-        page.setSite(null);
     }
 
     public Set<PageEntity> getPages() {
@@ -60,6 +61,7 @@ public class SiteEntity {
         status = Status.INDEXING;
         status_time = new Date(System.currentTimeMillis());
         last_error = null;
+        pages.clear();
     }
 
     @Override
@@ -67,6 +69,7 @@ public class SiteEntity {
         return "\tURL   = " + url + '\n' +
                "\tname  = " + name + '\n' +
                "\tdate  = " + status_time + '\n' +
+               "\tstatus = " + status + '\n' +
                "\tTotal pages = " + pages.size();
     }
 }

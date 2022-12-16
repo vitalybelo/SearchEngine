@@ -49,6 +49,7 @@ public class ApiController {
             return ResponseEntity.ok(new RequestResponse(false, "Индексация уже запущена"));
         }
         // если индексация не запущена - запускаем сервис и выходим
+        //new Thread(() -> indexingService.startIndexingAll()).start();
         indexingService.startIndexingAll();
         return ResponseEntity.ok(new RequestResponse(true, ""));
     }

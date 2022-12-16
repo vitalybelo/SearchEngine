@@ -5,13 +5,13 @@ import org.jetbrains.annotations.NotNull;
 import searchengine.dto.statistics.DetailedStatisticsItem;
 import searchengine.dto.statistics.StatisticsData;
 import searchengine.model.SiteEntity;
+import searchengine.model.Status;
 import searchengine.repository.PageEntityRepository;
 import searchengine.repository.SiteEntityRepository;
 import searchengine.services.indexing.DataPackage;
 import searchengine.services.indexing.RecursiveLinkParser;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ForkJoinPool;
 
 @Setter
@@ -21,7 +21,6 @@ public class IndexingService {
     private PageEntityRepository pageRepository;
     private List<DetailedStatisticsItem> searchItems;
     private StatisticsData statisticsData;
-    private SiteEntity siteEntity;
     List<Thread> threads = new ArrayList<>();
 
     public IndexingService(@NotNull StatisticsData statisticsData, SiteEntityRepository site, PageEntityRepository page)
@@ -34,37 +33,48 @@ public class IndexingService {
 
     public void startIndexingAll()
     {
-        statisticsData.getTotal().setIndexing(true);
+        threads.clear();
+        // запуск индексирования по разным потокам
         for (DetailedStatisticsItem item : searchItems)
         {
-            System.out.println("Start indexing for: " + item.getName() + " :: " + item.getUrl());
             Thread thread = new Thread(() -> { startIndexing(item); });
             threads.add(thread);
             thread.start();
         }
     }
 
-    public void startIndexing(@NotNull DetailedStatisticsItem item) {
+    public synchronized void startIndexing(@NotNull DetailedStatisticsItem item)
+    {
+        statisticsData.getTotal().setIndexing(true);
+        // создаем умный url который возвращает сайт
+        String smartUrl = RecursiveLinkParser.smartUrl(item.getUrl());
+        if (smartUrl != null) item.setUrl(smartUrl);
+
         // Ищем совпадения по названию для записи в таблице site и удаляем если находим
         Iterable<SiteEntity> siteEntities = siteRepository.findAll();
-        for (SiteEntity s : siteEntities) {
-            if (s.getName().equals(item.getName())) {
-                siteRepository.delete(s);
+        for (SiteEntity site : siteEntities) {
+            if (site.getName().equals(item.getName())) {
+                siteRepository.delete(site);
             }
         }
         // Создаем новую запись по имени и адресу сайта
-        String url = RecursiveLinkParser.smartUrl(item.getUrl());
-        SiteEntity siteEntity = new SiteEntity(item.getName(), (url == null ? item.getUrl() : url));
-        siteRepository.save(siteEntity);
+        SiteEntity site = new SiteEntity(item.getName(), item.getUrl());
+        site.setStatus(Status.INDEXING);
+        siteRepository.save(site);
 
         // Поиск ссылок по выбранному URL
-        DataPackage data = new DataPackage(statisticsData, siteEntity, siteRepository, pageRepository);
-        RecursiveLinkParser parser = new RecursiveLinkParser(siteEntity.getUrl(), data);
+        DataPackage data = new DataPackage(statisticsData, site, siteRepository, pageRepository);
+        RecursiveLinkParser parser = new RecursiveLinkParser(item.getUrl(), data);
+        RecursiveLinkParser.uniqueURL.clear();
+        System.out.println("******** START PARSE: " + item.getUrl() + " :: " + RecursiveLinkParser.uniqueURL.size());
         ForkJoinPool commonPool = ForkJoinPool.commonPool();
         commonPool.invoke(parser);
 
-        this.siteEntity = parser.getResult();
-        System.out.println("\n" + this.siteEntity);
+        // сохраняем результаты индексирования в базе (каскадом в таблицах site и page)
+        site = parser.getResult();
+        siteRepository.save(site);
+        System.out.println("\n" + site);
+        //statisticsData.getTotal().setIndexing(false);
     }
 
     public void stopIndexing()
@@ -80,7 +90,6 @@ public class IndexingService {
             }
             System.out.println(t.getName() + " :: " + t.getState());
         }
-        threads.clear();
     }
 
 

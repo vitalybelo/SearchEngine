@@ -10,6 +10,7 @@ import searchengine.model.PageEntity;
 import searchengine.model.SiteEntity;
 import searchengine.model.Status;
 
+import java.net.URL;
 import java.util.*;
 import java.util.concurrent.RecursiveAction;
 
@@ -17,9 +18,9 @@ import static java.lang.Thread.sleep;
 
 public class RecursiveLinkParser extends RecursiveAction {
 
-    public final static int TIME_OUT = 5000;
-    public final static int MAX_URLS = 10;
-    public static TreeSet<String> uniqueURL = new TreeSet<>();;
+    public final static int TIME_OUT = 60_000;
+    public final static int MAX_URLS = 100;
+    public static final TreeSet<String> uniqueURL = new TreeSet<>(); // should be static !!!
 
     private final UserAgent userAgent = new UserAgent();
     private final DataPackage data;
@@ -35,7 +36,7 @@ public class RecursiveLinkParser extends RecursiveAction {
     protected void compute()
     {
         if (!data.isIndexing()) return;
-        //if (data.getSiteEntity().getPages().size() >= MAX_URLS) return;
+        if (data.getSiteEntity().getPages().size() >= MAX_URLS) return;
         List<RecursiveLinkParser> parserTasks = new ArrayList<>();
         try {
             // пауза частоты индексирования
@@ -47,41 +48,54 @@ public class RecursiveLinkParser extends RecursiveAction {
                     .referrer("https://google.com")
                     .ignoreContentType(true)
                     .ignoreHttpErrors(true)
-                        .timeout(TIME_OUT)
+                    .timeout(TIME_OUT)
                     .newRequest();
-            // парсим в документ страницу, собираем все теги со ссылками
-            Document doc = connection.execute().parse();
-            Elements links = doc.select("a[href]");
-            String content = doc.body().toString();
+            // парсим в документ страницу, получаем список всех тегов со ссылками
+            Document document = connection.execute().parse();
+            Elements links = document.select("a[href]");
 
+            // для каждого тега ссылок
             for (Element link : links)
             {
                 if (!data.isIndexing()) break;
-                //if (data.getSiteEntity().getPages().size() >= MAX_URLS) break;
+                if (data.getSiteEntity().getPages().size() >= MAX_URLS) break;
                 String url = link.attr("abs:href");
                 if (isLinkIgnore(url)) continue;
-                PageEntity page = new PageEntity(url, 200, content);
-                //if (uniqueURL.add(url))
-                if (data.getSiteEntity().getPages().add(page))
+                if (!url.endsWith("/")) url += "/";
+                // добавляем только уникальные ссылки
+                if (uniqueURL.add(url))
                 {
-                    // запись PAGE в таблицу SITE
+                    System.out.println(data.getSiteEntity().getName() + " ---> " + url);
+
+                    // читаем текс и код ответа с выбранного url
+                    Document doc = Jsoup.connect(url).ignoreHttpErrors(true).get();
+                    int code = doc.connection().response().statusCode();
+                    String content = doc.body().text(); //.replaceAll("[\\p{Cntrl}^\r\n\t]+", "");
+                    PageEntity page = new PageEntity(data.getSiteEntity(), url, code, content);
                     data.getSiteEntity().setStatus_time(new Date(System.currentTimeMillis()));
-                    data.getSiteEntity().addPage(new PageEntity(url, 200, content));
-                    //data.getSiteEntityRepository().save(data.getSiteEntity());
-                    // переходим по ссылке и делаем тоже самое там
-                    synchronized (parserTasks) {
-                        RecursiveLinkParser task = new RecursiveLinkParser(url, data);
+
+                    // запись в таблицу PAGE в таблицу SITE
+                    synchronized (page) {
+                        data.getSiteEntity().addPage(page);
+                    }
+                    // рекурсивно переходим по ссылке
+                    RecursiveLinkParser task = new RecursiveLinkParser(url, data);
+                    // добавляем задачу и ставим в очередь в pool
+                    synchronized (parserTasks)
+                    {// ----------------------------- SYNCHRO
                         parserTasks.add(task);
                         task.fork();
-                    }
-                    System.out.println(url);
+                    }// ----------------------------- SYNCHRO
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        for (RecursiveLinkParser parserTask : parserTasks) {
-            parserTask.join();
+        // запускаем задачи
+        synchronized (parserTasks) {
+            for (RecursiveLinkParser parserTask : parserTasks) {
+                parserTask.join();
+            }
         }
     }
 
@@ -92,6 +106,7 @@ public class RecursiveLinkParser extends RecursiveAction {
         } else {
             data.getSiteEntity().setStatus(Status.FAILED);
         }
+        data.getSiteEntity().setStatus_time(new Date(System.currentTimeMillis()));
         return data.getSiteEntity();
     }
 
@@ -107,16 +122,13 @@ public class RecursiveLinkParser extends RecursiveAction {
 
     public static String smartUrl(String site)
     {
-        String urlPattern = null;
+        URL url = null;
         try {
-            Document doc = Jsoup.connect(site).get();
-            Element link = doc.select("a[href]").first();
-            if (link != null)
-                urlPattern = link.attr("abs:href");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return urlPattern;
+            Connection.Response response = Jsoup.connect(site).execute();
+            url = response.url();
+        } catch (Exception e) { e.printStackTrace(); }
+        assert url != null;
+        return url.toString();
     }
 
 
