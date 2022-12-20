@@ -33,8 +33,8 @@ public class IndexingService {
 
     public void startIndexingAll()
     {
-        statisticsData.getTotal().setIndexing(true);
         threads.clear();
+        statisticsData.getTotal().setIndexing(true);
         // запуск индексирования по разным потокам
         for (DetailedStatisticsItem item : searchItems)
         {

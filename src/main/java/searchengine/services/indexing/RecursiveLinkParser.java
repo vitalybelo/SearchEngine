@@ -26,8 +26,7 @@ public class RecursiveLinkParser extends RecursiveAction {
     private final DataPackage data;
     private final String urlSite;
 
-    public RecursiveLinkParser(@NotNull String urlSite, DataPackage dataPackage)
-    {
+    public RecursiveLinkParser(@NotNull String urlSite, DataPackage dataPackage) {
         this.data = dataPackage;
         this.urlSite = urlSite;
     }
@@ -36,7 +35,8 @@ public class RecursiveLinkParser extends RecursiveAction {
     protected void compute()
     {
         if (!data.isIndexing()) return;
-        if (data.getSiteEntity().getPages().size() >= MAX_URLS) return;
+        //if (data.getSiteEntity().getPages().size() >= MAX_URLS) return;
+        if (uniqueURL.size() >= MAX_URLS) return;
         List<RecursiveLinkParser> parserTasks = new ArrayList<>();
         try {
             // пауза частоты индексирования
@@ -58,7 +58,8 @@ public class RecursiveLinkParser extends RecursiveAction {
             for (Element link : links)
             {
                 if (!data.isIndexing()) break;
-                if (data.getSiteEntity().getPages().size() >= MAX_URLS) break;
+                //if (data.getSiteEntity().getPages().size() >= MAX_URLS) break;
+                if (uniqueURL.size() >= MAX_URLS) break;
                 String url = link.attr("abs:href");
                 if (isLinkIgnore(url)) continue;
                 if (!url.endsWith("/")) url += "/";
@@ -75,9 +76,7 @@ public class RecursiveLinkParser extends RecursiveAction {
                     data.getSiteEntity().setStatus_time(new Date(System.currentTimeMillis()));
 
                     // запись в таблицу PAGE в таблицу SITE
-                    synchronized (page) {
-                        data.getSiteEntity().addPage(page);
-                    }
+                    data.getSiteEntity().addPage(page);
                     // рекурсивно переходим по ссылке
                     RecursiveLinkParser task = new RecursiveLinkParser(url, data);
                     // добавляем задачу и ставим в очередь в pool
@@ -106,7 +105,6 @@ public class RecursiveLinkParser extends RecursiveAction {
         } else {
             data.getSiteEntity().setStatus(Status.FAILED);
         }
-        data.getSiteEntity().setStatus_time(new Date(System.currentTimeMillis()));
         return data.getSiteEntity();
     }
 
