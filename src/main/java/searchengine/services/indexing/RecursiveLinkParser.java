@@ -100,8 +100,10 @@ public class RecursiveLinkParser extends RecursiveAction {
     {
         if (data.isIndexing()) {
             data.getSiteEntity().setStatus(Status.INDEXED);
+            data.getSiteEntity().setLast_error("Завершено без ошибок");
         } else {
             data.getSiteEntity().setStatus(Status.FAILED);
+            data.getSiteEntity().setLast_error("Прервано пользователем");
         }
         return data.getSiteEntity();
     }

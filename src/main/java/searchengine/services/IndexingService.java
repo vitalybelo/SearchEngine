@@ -33,9 +33,9 @@ public class IndexingService {
 
     public void startIndexingAll()
     {
-        if (!threads.isEmpty()) threads.clear();
         statisticsData.getTotal().setIndexing(true);
-        // запуск индексирования по разным потокам
+        if (!threads.isEmpty()) threads.clear();
+        // обход страниц по отдельным потокам
         for (DetailedStatisticsItem item : searchItems)
         {
             Thread thread = new Thread(() -> { startIndexing(item); });
@@ -61,6 +61,7 @@ public class IndexingService {
         // Создаем новую запись по имени и адресу сайта
         SiteEntity site = new SiteEntity(item.getName(), item.getUrl());
         site.setStatus(Status.INDEXING);
+        site.setLast_error(null);
         siteRepository.save(site);
 
         // Поиск ссылок по выбранному URL
