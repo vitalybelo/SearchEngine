@@ -11,8 +11,8 @@ import javax.persistence.*;
 @Table(indexes = {@Index(name = "idx_path", columnList = "path", unique = true)})
 /**
  * !!! ВНИМАНИЕ !!! база данных search_engine должна иметь
- *  character-set-server=utf8mb4
- *  collation-server=utf8mb4_unicode_ci
+ *      character-set-server=utf8mb4
+ *      collation-server=utf8mb4_unicode_ci
  *  для корректной работы при сохранении в базе текстов страниц
  */
 public class PageEntity {
