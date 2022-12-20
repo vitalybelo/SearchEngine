@@ -35,7 +35,6 @@ public class RecursiveLinkParser extends RecursiveAction {
     protected void compute()
     {
         if (!data.isIndexing()) return;
-        //if (data.getSiteEntity().getPages().size() >= MAX_URLS) return;
         if (uniqueURL.size() >= MAX_URLS) return;
         List<RecursiveLinkParser> parserTasks = new ArrayList<>();
         try {
@@ -58,7 +57,6 @@ public class RecursiveLinkParser extends RecursiveAction {
             for (Element link : links)
             {
                 if (!data.isIndexing()) break;
-                //if (data.getSiteEntity().getPages().size() >= MAX_URLS) break;
                 if (uniqueURL.size() >= MAX_URLS) break;
                 String url = link.attr("abs:href");
                 if (isLinkIgnore(url)) continue;
@@ -91,11 +89,11 @@ public class RecursiveLinkParser extends RecursiveAction {
             e.printStackTrace();
         }
         // запускаем задачи
-        synchronized (parserTasks) {
-            for (RecursiveLinkParser parserTask : parserTasks) {
+        synchronized (parserTasks)
+        {// ----------------------------- SYNCHRO
+            for (RecursiveLinkParser parserTask : parserTasks)
                 parserTask.join();
-            }
-        }
+        }// ----------------------------- SYNCHRO
     }
 
     public SiteEntity getResult()
