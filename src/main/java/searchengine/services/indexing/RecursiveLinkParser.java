@@ -122,10 +122,12 @@ public class RecursiveLinkParser extends RecursiveAction {
     {
         URL url = null;
         try {
-            Connection.Response response = Jsoup.connect(site).execute();
+            Connection.Response response = Jsoup.connect(site).ignoreHttpErrors(true).execute();
             url = response.url();
-        } catch (Exception e) { e.printStackTrace(); }
-        assert url != null;
+        } catch (Exception e) {
+            System.err.println("РЕСУРС " + site + " НЕ ДОСТУПЕН ИЛИ НЕ СУЩЕСТВУЕТ");
+            return null;
+        }
         return url.toString();
     }
 

@@ -46,10 +46,13 @@ public class IndexingService {
 
     public synchronized void startIndexing(@NotNull DetailedStatisticsItem item)
     {
-        // создаем умный url который возвращает сайт
+        // создаем умный url который возвращает сайт и анализируем результат доступности сайта
         String smartUrl = RecursiveLinkParser.smartUrl(item.getUrl());
-        if (smartUrl != null) item.setUrl(smartUrl);
-        System.out.println("\n\nSTART indexing for: " + item.getUrl() + "\n");
+        if (smartUrl != null) {
+            // сайт доступен, заменяем адрес сайта на умный адрес
+            item.setUrl(smartUrl);
+            System.out.println("\n\nSTART indexing for: " + item.getUrl() + "\n");
+        }
 
         // Ищем совпадения по названию для записи в таблице site и удаляем если находим
         Iterable<SiteEntity> siteEntities = siteRepository.findAll();
@@ -60,8 +63,13 @@ public class IndexingService {
         }
         // Создаем новую запись по имени и адресу сайта
         SiteEntity site = new SiteEntity(item.getName(), item.getUrl());
-        site.setStatus(Status.INDEXING);
-        site.setLast_error(null);
+        if (smartUrl == null) {
+            // если сайт недоступен, тогда сохраняем статус ошибки и завершаем процесс
+            site.setStatus(Status.FAILED);
+            site.setLast_error("Сайт недоступен или не существует");
+            siteRepository.save(site);
+            return;
+        }
         siteRepository.save(site);
 
         // Поиск ссылок по выбранному URL
