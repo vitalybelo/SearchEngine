@@ -42,6 +42,7 @@ public class IndexingService {
             threads.add(thread);
             thread.start();
         }
+
     }
 
     public synchronized void startIndexing(@NotNull DetailedStatisticsItem item)

@@ -47,11 +47,12 @@ public class UserAgent {
             "msnbot-media/1.1 (+http://search.msn.com/msnbot.htm)",
             "msnbot-news (+http://search.msn.com/msnbot.htm)",
             "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)",
+            ""
     };
 
     public String get()
     {
-        int bound = userAgentList.length;
+        int bound = userAgentList.length - 1;
         int index = ThreadLocalRandom.current().nextInt(0, bound);
         if (index >= 0 && index < bound)
             return userAgentList[index];

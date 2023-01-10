@@ -73,7 +73,7 @@ public class RecursiveLinkParser extends RecursiveAction {
                     PageEntity page = new PageEntity(data.getSiteEntity(), url, code, content);
                     data.getSiteEntity().setStatus_time(new Date(System.currentTimeMillis()));
 
-                    // запись в таблицу PAGE в таблицу SITE
+                    // запись в таблицу PAGE в таблицу SITE (объект в памяти)
                     data.getSiteEntity().addPage(page);
                     // рекурсивно переходим по ссылке
                     RecursiveLinkParser task = new RecursiveLinkParser(url, data);
