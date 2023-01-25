@@ -14,6 +14,7 @@ import java.util.*;
  *      collation-server=utf8mb4_unicode_ci
  *  для корректной работы при сохранении в базе текстов страниц
  */
+
 public class SiteEntity {
 
     @Id
