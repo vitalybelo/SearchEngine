@@ -76,7 +76,7 @@ public class IndexingService {
         // Поиск ссылок по выбранному URL
         DataPackage data = new DataPackage(statisticsData, site, siteRepository, pageRepository);
         RecursiveLinkParser parser = new RecursiveLinkParser(item.getUrl(), data);
-        RecursiveLinkParser.uniqueURL.clear(); // dont remove
+        RecursiveLinkParser.UNIQUE_URL.clear(); // dont remove
         ForkJoinPool commonPool = ForkJoinPool.commonPool();
         commonPool.invoke(parser);
 

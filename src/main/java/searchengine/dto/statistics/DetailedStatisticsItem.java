@@ -13,5 +13,4 @@ public class DetailedStatisticsItem {
     private int pages;
     private int lemmas;
 
-
 }

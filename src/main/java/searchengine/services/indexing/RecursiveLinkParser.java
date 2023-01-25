@@ -20,7 +20,7 @@ public class RecursiveLinkParser extends RecursiveAction {
 
     public final static int TIME_OUT = 60_000;
     public final static int MAX_URLS = 100;
-    public static final TreeSet<String> uniqueURL = new TreeSet<>(); // should be static !!!
+    public static final TreeSet<String> UNIQUE_URL = new TreeSet<>(); // should be static !!!
 
     private final UserAgent userAgent = new UserAgent();
     private final DataPackage data;
@@ -35,7 +35,7 @@ public class RecursiveLinkParser extends RecursiveAction {
     protected void compute()
     {
         if (!data.isIndexing()) return;
-        if (uniqueURL.size() >= MAX_URLS) return;
+        if (UNIQUE_URL.size() >= MAX_URLS) return;
         List<RecursiveLinkParser> parserTasks = new ArrayList<>();
         try {
             // пауза частоты индексирования
@@ -57,12 +57,12 @@ public class RecursiveLinkParser extends RecursiveAction {
             for (Element link : links)
             {
                 if (!data.isIndexing()) break;
-                if (uniqueURL.size() >= MAX_URLS) break;
+                if (UNIQUE_URL.size() >= MAX_URLS) break;
                 String url = link.attr("abs:href");
                 if (isLinkIgnore(url)) continue;
                 if (!url.endsWith("/")) url += "/";
                 // добавляем только уникальные ссылки
-                if (uniqueURL.add(url))
+                if (UNIQUE_URL.add(url))
                 {
                     System.out.println(data.getSiteEntity().getName() + " ---> " + url);
 
